@@ -416,7 +416,7 @@ iwBar.addEventListener('pointercancel', endDrag);
     if (fill) fill.style.width = '100%';
     requestAnimationFrame(() => {
       el.classList.add('done');
-      setTimeout(() => el.remove(), 650);
+      setTimeout(() => { el.remove(); warmCases(); }, 650);
     });
   };
   const bump = () => {
@@ -434,3 +434,45 @@ iwBar.addEventListener('pointercancel', endDrag);
   });
   setTimeout(finish, 5000);   // safety net: never hold the desktop longer than 5s
 })();
+
+/* ---------- background prefetch of case media ----------
+   After the desktop is shown, quietly warm the browser cache for every case's
+   media — posters/images first (cheap), then the videos a few at a time — so
+   opening ANY case plays its gifs/videos instantly with no on-the-fly loading.
+   Uses real <video> elements (same load path the case will use, so it works in
+   Safari too). Skips on data-saver / very slow links. */
+function warmCases() {
+  try {
+    const conn = navigator.connection;
+    if (conn && (conn.saveData || /(^|\b)(slow-)?2g\b/.test(conn.effectiveType || ''))) return;
+    const W = window.WINDOWS || {};
+    const imgs = new Set(), vids = new Set();
+    Object.values(W).forEach((w) => (w && w.previews || []).forEach((pv) => {
+      if (!pv || !pv.src) return;
+      if (pv.poster) imgs.add(pv.poster);
+      const isVid = pv.type === 'video' || /\.(mp4|webm|mov)$/i.test(pv.src);
+      (isVid ? vids : imgs).add(pv.src);
+    }));
+    imgs.forEach((u) => { const im = new Image(); im.decoding = 'async'; im.src = u; });
+    const queue = [...vids];
+    let i = 0, active = 0;
+    const MAX = 3;                       // a few clips at a time — don't hog bandwidth
+    const pump = () => {
+      while (active < MAX && i < queue.length) {
+        const url = queue[i++]; active++;
+        const v = document.createElement('video');
+        v.muted = true; v.preload = 'auto'; v.src = url;
+        let settled = false;
+        const fin = () => {
+          if (settled) return; settled = true; active--;
+          v.removeAttribute('src'); try { v.load(); } catch (e) {}   // free buffer, keep HTTP cache
+          pump();
+        };
+        v.addEventListener('canplaythrough', fin, { once: true });
+        v.addEventListener('error', fin, { once: true });
+        setTimeout(fin, 25000);          // a stalled clip must not block the queue
+      }
+    };
+    pump();
+  } catch (e) { /* prefetch is best-effort */ }
+}
