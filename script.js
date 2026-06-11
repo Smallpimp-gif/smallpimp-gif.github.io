@@ -396,83 +396,94 @@ const endDrag = () => { drag = null; infowin.classList.remove('dragging'); };
 iwBar.addEventListener('pointerup', endDrag);
 iwBar.addEventListener('pointercancel', endDrag);
 
-/* ---------- boot screen ----------
-   Wait for the wallpaper, every desktop icon and the dock to finish loading,
-   updating the progress bar, then fade the overlay out — the desktop is revealed
-   fully painted with its icon animations already playing. */
+/* ---------- boot screen (macOS-style) ----------
+   Loads EVERYTHING before the desktop is shown: wallpaper, every icon, the dock,
+   and all case media (posters + videos). The progress bar tracks real loading and
+   the desktop is revealed only at 100% — so opening ANY case afterwards plays its
+   gifs/videos instantly, with zero on-the-fly loading. */
 (function boot() {
   const el = document.getElementById('boot');
   if (!el) return;
   const fill = document.getElementById('bootFill');
-  const media = [
+
+  // desktop media already in the DOM
+  const domMedia = [
     document.querySelector('.wallpaper'),
     ...document.querySelectorAll('#icons .icon img, #icons .icon video, .dock__item img'),
   ].filter(Boolean);
-  const total = media.length || 1;
+
+  // every case's media, declared in windows-data.js
+  const W = window.WINDOWS || {};
+  const caseImgs = new Set(), caseVids = new Set();
+  Object.values(W).forEach((w) => ((w && w.previews) || []).forEach((pv) => {
+    if (!pv || !pv.src) return;
+    if (pv.poster) caseImgs.add(pv.poster);
+    const isVid = pv.type === 'video' || /\.(mp4|webm|mov)$/i.test(pv.src);
+    (isVid ? caseVids : caseImgs).add(pv.src);
+  }));
+  const vidList = [...caseVids];
+
+  // weighted progress — the videos are the heavy part, so they move the bar most
+  const VW = 4;
+  const total = domMedia.length + caseImgs.size + vidList.length * VW || 1;
   let done = 0, finished = false;
+
   const finish = () => {
     if (finished) return;
     finished = true;
     if (fill) fill.style.width = '100%';
     requestAnimationFrame(() => {
       el.classList.add('done');
-      setTimeout(() => { el.remove(); warmCases(); }, 650);
+      setTimeout(() => el.remove(), 700);
     });
   };
-  const bump = () => {
-    done++;
-    if (fill) fill.style.width = Math.min(100, Math.round((done / total) * 100)) + '%';
+  const bump = (w) => {
+    done += (w || 1);
+    if (fill) fill.style.width = Math.min(100, (done / total) * 100) + '%';
     if (done >= total) finish();
   };
-  media.forEach((m) => {
+
+  // 1) desktop media (existing elements)
+  domMedia.forEach((m) => {
     const isVid = m.tagName === 'VIDEO';
     const ready = isVid ? m.readyState >= 2 : (m.complete && m.naturalWidth > 0);
-    if (ready) { bump(); return; }
+    if (ready) return bump(1);
     if (isVid) m.preload = 'auto'; else m.loading = 'eager';
-    m.addEventListener(isVid ? 'loadeddata' : 'load', bump, { once: true });
-    m.addEventListener('error', bump, { once: true });
+    m.addEventListener(isVid ? 'loadeddata' : 'load', () => bump(1), { once: true });
+    m.addEventListener('error', () => bump(1), { once: true });
   });
-  setTimeout(finish, 5000);   // safety net: never hold the desktop longer than 5s
-})();
 
-/* ---------- background prefetch of case media ----------
-   After the desktop is shown, quietly warm the browser cache for every case's
-   media — posters/images first (cheap), then the videos a few at a time — so
-   opening ANY case plays its gifs/videos instantly with no on-the-fly loading.
-   Uses real <video> elements (same load path the case will use, so it works in
-   Safari too). Skips on data-saver / very slow links. */
-function warmCases() {
-  try {
-    const conn = navigator.connection;
-    if (conn && (conn.saveData || /(^|\b)(slow-)?2g\b/.test(conn.effectiveType || ''))) return;
-    const W = window.WINDOWS || {};
-    const imgs = new Set(), vids = new Set();
-    Object.values(W).forEach((w) => (w && w.previews || []).forEach((pv) => {
-      if (!pv || !pv.src) return;
-      if (pv.poster) imgs.add(pv.poster);
-      const isVid = pv.type === 'video' || /\.(mp4|webm|mov)$/i.test(pv.src);
-      (isVid ? vids : imgs).add(pv.src);
-    }));
-    imgs.forEach((u) => { const im = new Image(); im.decoding = 'async'; im.src = u; });
-    const queue = [...vids];
-    let i = 0, active = 0;
-    const MAX = 3;                       // a few clips at a time — don't hog bandwidth
-    const pump = () => {
-      while (active < MAX && i < queue.length) {
-        const url = queue[i++]; active++;
-        const v = document.createElement('video');
-        v.muted = true; v.preload = 'auto'; v.src = url;
-        let settled = false;
-        const fin = () => {
-          if (settled) return; settled = true; active--;
-          v.removeAttribute('src'); try { v.load(); } catch (e) {}   // free buffer, keep HTTP cache
-          pump();
-        };
-        v.addEventListener('canplaythrough', fin, { once: true });
-        v.addEventListener('error', fin, { once: true });
-        setTimeout(fin, 25000);          // a stalled clip must not block the queue
-      }
-    };
-    pump();
-  } catch (e) { /* prefetch is best-effort */ }
-}
+  // 2) case posters + images
+  caseImgs.forEach((u) => {
+    const im = new Image();
+    im.onload = () => bump(1);
+    im.onerror = () => bump(1);
+    im.src = u;
+  });
+
+  // 3) case videos — buffered ready-to-play, a handful at a time
+  let vi = 0, active = 0;
+  const MAX = 6;
+  const pumpVids = () => {
+    while (active < MAX && vi < vidList.length) {
+      const url = vidList[vi++]; active++;
+      const v = document.createElement('video');
+      v.muted = true; v.preload = 'auto'; v.src = url;
+      let settled = false;
+      const fin = () => {
+        if (settled) return;
+        settled = true; active--;
+        bump(VW);
+        v.removeAttribute('src'); try { v.load(); } catch (e) {}   // free RAM, keep the cache warm
+        pumpVids();
+      };
+      v.addEventListener('canplaythrough', fin, { once: true });
+      v.addEventListener('error', fin, { once: true });
+      setTimeout(fin, 40000);   // a single stalled clip must not freeze the boot
+    }
+  };
+  pumpVids();
+  if (total <= 1) finish();
+
+  setTimeout(finish, 240000);   // absolute fallback (4 min) — only on an extremely slow link
+})();
