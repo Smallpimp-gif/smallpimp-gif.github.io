@@ -48,9 +48,9 @@ const PROJECTS = [
 
 /* Dock — order matters. `sep:true` inserts a divider. `href` makes it a link. */
 const DOCK = [
-  { slug:'instagram', label:'Instagram', href:'https://www.instagram.com/bychudy/' },
-  { slug:'telegram',  label:'Telegram',  href:'https://t.me/semenovfolders' },
-  { slug:'mail',      label:'Mail',      href:'mailto:bychudy@gmail.com' },
+  { slug:'instagram', label:'Instagram', href:'https://www.instagram.com/semenov.folders/' },
+  { slug:'telegram',  label:'Telegram',  href:'https://t.me/Semenovfolders' },
+  { slug:'mail',      label:'Mail',      href:'mailto:Small_pimp@mail.ru' },
   { sep:true },
   { slug:'trash',     label:'Trash' },
 ];
