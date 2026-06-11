@@ -161,7 +161,7 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 const M_REF_W = 390, M_REF_H = 844;
 const mobilePts = (() => {
   const rng = mulberry32(424242), pts = [];
-  const X0 = 26, X1 = 364, Y0 = 46, Y1 = 772;       // scatter across the WHOLE desktop
+  const X0 = 40, X1 = 350, Y0 = 46, Y1 = 700;       // scatter, lifted up + pulled in so icons/labels clear the dock and screen edges
   const FACE = { x: 196, y: 338, r: 76 };           // keep the face clear
   const DOCKY = 774;                                // leave room for the bottom dock
   const free = (x, y) => (x - FACE.x) ** 2 + (y - FACE.y) ** 2 >= FACE.r * FACE.r

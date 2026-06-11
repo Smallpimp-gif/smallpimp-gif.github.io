@@ -141,10 +141,10 @@ img { -webkit-user-drag: none; user-select: none; }
   transform: translateX(-50%);
   z-index: 20;
 }
-body.is-mobile { --dock-size: 26px; }      /* compact dock icons on phones */
+body.is-mobile { --dock-size: 54px; }      /* iOS-sized dock icons on phones */
 body.is-mobile .dock {
   left: 50%;
-  bottom: 12px;
+  bottom: calc(20px + env(safe-area-inset-bottom));   /* clear the home indicator / Safari bottom bar */
   top: auto;
   transform: translateX(-50%);
 }
@@ -165,7 +165,8 @@ body.is-mobile .dock {
      0 16px 40px rgba(0,0,0,.28),
      0 3px 10px rgba(0,0,0,.16);
 }
-body.is-mobile .dock__inner { gap: 8px; padding: 6px 9px; }
+body.is-mobile .dock__inner { gap: 15px; padding: 10px 16px; border-radius: 30px; }
+body.is-mobile .dock__sep { height: 42px; }
 
 .dock__item {
   position: relative;
