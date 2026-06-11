@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SEMENOV</title>
+  <meta name="description" content="SEMENOV — portfolio">
+  <meta property="og:title" content="SEMENOV">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/bg.jpg">
+  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="256x256" href="assets/favicon-cat.png">
+  <link rel="apple-touch-icon" href="assets/favicon-cat.png">
+  <link rel="preload" as="image" href="assets/bg.jpg">
+  <link rel="stylesheet" href="styles.css?v=121">
+</head>
+<body>
+  <main class="viewport" id="viewport">
+    <!-- Full-bleed wallpaper fills the whole screen; icons are anchored to it by JS -->
+    <img class="wallpaper" src="assets/bg.jpg" alt="" aria-hidden="true" draggable="false">
+
+    <!-- Project icons (rendered + positioned over the photo by script.js) -->
+    <div class="icons" id="icons"></div>
+
+      <!-- macOS-style dock (rendered by script.js) -->
+      <nav class="dock" id="dock" aria-label="Dock"></nav>
+
+      <!-- "Get Info" window — opened when a project icon is clicked -->
+      <section class="infowin" id="infowin" role="dialog" aria-modal="false" aria-labelledby="iwWinTitle" hidden>
+        <header class="infowin__bar" id="infowinBar">
+          <span class="infowin__lights">
+            <span class="tl tl--red" id="iwClose" role="button" aria-label="Close" tabindex="0"></span>
+            <span class="tl tl--yellow"></span>
+            <span class="tl tl--green"></span>
+          </span>
+          <span class="infowin__title">Information about:&nbsp;<span id="iwWinTitle"></span></span>
+        </header>
+        <div class="infowin__body" id="infowinBody">
+          <div class="infowin__head">
+            <img class="infowin__icon" id="iwIcon" alt="" draggable="false">
+            <div class="infowin__heading">
+              <div class="infowin__bigtitle" id="iwBig"></div>
+              <div class="infowin__subtitle" id="iwSub"></div>
+            </div>
+          </div>
+          <p class="infowin__desc" id="iwDesc"></p>
+          <details class="infowin__sec" id="iwDetails" open>
+            <summary>Details:</summary>
+            <div class="infowin__type"><span class="infowin__k">Type:</span> <span id="iwType"></span></div>
+          </details>
+          <details class="infowin__sec" id="iwPreviewSec" open>
+            <summary>Preview:</summary>
+            <div class="infowin__preview" id="iwPreview"></div>
+          </details>
+        </div>
+      </section>
+  </main>
+
+  <noscript>
+    <p style="font:600 15px/1.4 -apple-system,system-ui,sans-serif;text-align:center;padding:24px;color:#111">
+      SEMENOV — portfolio. Please enable JavaScript to view the interactive desktop.
+    </p>
+  </noscript>
+
+  <script src="windows-data.js?v=121"></script>
+  <script src="script.js?v=121"></script>
+</body>
+</html>

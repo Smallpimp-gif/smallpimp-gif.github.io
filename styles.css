@@ -1,0 +1,391 @@
+/* =========================================================================
+   SEMENOV — portfolio  ·  macOS-desktop metaphor
+   ========================================================================= */
+
+:root {
+  --label: #fffefc;                 /* desktop icon label colour            */
+  --dock-size: 48px;                /* base dock icon size (desktop)        */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+          system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: #fff;                 /* the portrait fades to white → seamless */
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+  cursor: default;
+}
+
+img { -webkit-user-drag: none; user-select: none; }
+
+/* ---- viewport + scaled stage ---------------------------------------- */
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* full-bleed wallpaper — fills the whole viewport. The icons are anchored to it
+   by script.js using the same cover transform, so the figure and icons stay
+   pixel-aligned at every viewport size. */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ---- project icons (positioned + sized by script.js, anchored to the photo) ---- */
+.icons { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+.icon {
+  position: absolute;
+  transform: translate(-50%, -50%);  /* JS sets left/top = icon CENTRE */
+  /* width / height set by JS */
+  cursor: pointer;
+  pointer-events: auto;              /* only icons catch clicks; empty grass passes through */
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.icon:hover { z-index: 50; }
+
+.icon__thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.04);
+  transform: rotate(var(--rot, 0deg));   /* slight scattered-photo tilt */
+  transition: transform .22s cubic-bezier(.22,.61,.36,1),
+              border-radius .22s ease, box-shadow .22s ease;
+  will-change: transform;
+}
+.icon__thumb img,
+.icon__thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* macOS "quick look" hover: the thumb enlarges with a white frame */
+.icon:hover  .icon__thumb {
+  transform: rotate(0deg) scale(1.5);    /* straighten + enlarge (quick look) */
+  border-radius: 6px;
+  box-shadow: 0 0 0 1.4px #fff, 0 14px 30px rgba(0,0,0,.32), 0 4px 10px rgba(0,0,0,.22);
+}
+.icon:active .icon__thumb { transform: rotate(0deg) scale(1.42); }
+
+/* subtle inner frame for the flat b&w animated marks so they read as intentional tiles */
+.icon[data-slug="folders"]:not(:hover) .icon__thumb {
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.16), 0 1px 3px rgba(0,0,0,.22);
+}
+.icon[data-slug="50gym"]:not(:hover) .icon__thumb {
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.22), 0 1px 3px rgba(0,0,0,.22);
+}
+
+.icon__label {
+  position: absolute;
+  top: calc(100% + 7px);             /* sits just below the thumb, centred */
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 176px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: var(--lbl, 13px);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: .1px;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--label);
+  white-space: normal;
+  word-break: keep-all;
+  text-shadow:
+     0 0 1px  rgba(0,0,0,.34),
+     0 1px 2px rgba(0,0,0,.42),
+     0 1px 6px rgba(0,0,0,.30);
+  pointer-events: none;              /* never intercept clicks meant for an icon */
+  opacity: 1;                        /* names visible on desktop */
+  transition: background-color .16s ease, opacity .16s ease,
+              top .22s cubic-bezier(.22,.61,.36,1);
+}
+/* selected-style blue pill + push the label clear of the enlarged thumb */
+.icon:hover .icon__label {
+  opacity: 1;
+  background: #0a84ff;               /* macOS system blue (selection) */
+  color: #fff;
+  text-shadow: none;
+  top: calc(125% + 7px);             /* clear the 1.5× enlarged thumb */
+}
+
+/* ---- dock ----------------------------------------------------------- */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+body.is-mobile { --dock-size: 26px; }      /* compact dock icons on phones */
+body.is-mobile .dock {
+  left: 50%;
+  bottom: 12px;
+  top: auto;
+  transform: translateX(-50%);
+}
+
+.dock__inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  padding: 8px 14px;
+  border-radius: 19px;               /* rounded-rectangle corners (macOS squircle), not a pill */
+  background: rgba(142,144,152,.16);  /* Tahoe "liquid glass" — brighter, picks up the wallpaper */
+  backdrop-filter: blur(32px) saturate(195%) brightness(1.05);
+  -webkit-backdrop-filter: blur(32px) saturate(195%) brightness(1.05);
+  box-shadow:
+     inset 0 1px 0 rgba(255,255,255,.60),
+     inset 0 0 0 .5px rgba(255,255,255,.22),
+     inset 0 -12px 24px rgba(255,255,255,.05),
+     0 16px 40px rgba(0,0,0,.28),
+     0 3px 10px rgba(0,0,0,.16);
+}
+body.is-mobile .dock__inner { gap: 8px; padding: 6px 9px; }
+
+.dock__item {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--dock-size);
+  height: var(--dock-size);
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform .16s cubic-bezier(.22,.61,.36,1);
+}
+.dock__item:hover  { transform: translateY(-2px) scale(1.07); }
+.dock__item:active { transform: translateY(0)    scale(1.0);  }
+
+.dock__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.22));
+}
+.dock__item:active img { filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)) brightness(.92); }
+
+.dock__sep {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1px;
+  height: 34px;
+  background: rgba(255,255,255,.32);
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.06);
+}
+
+/* ---- dock tooltip --------------------------------------------------- */
+.dock__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 13px);
+  transform: translateX(-50%) translateY(4px);
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: #f5f5f7;
+  background: rgba(40,40,42,.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3), inset 0 0 0 .5px rgba(255,255,255,.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s ease, transform .14s ease;
+}
+.dock__tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(40,40,42,.82);
+}
+.dock__item:hover .dock__tip,
+.dock__item:focus-visible .dock__tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+:focus-visible { outline: 2px solid #007aff; outline-offset: 3px; border-radius: 4px; }
+
+/* ===== "Get Info" window ============================================== */
+.infowin {
+  position: fixed;
+  top: 60px;                         /* fallback only; script.js positions on open */
+  left: 60px;
+  transform: none;
+  width: 740px;
+  max-height: calc(100vh - 128px);   /* leave room for the bottom dock + margins */
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;                /* solid white — matches the real macOS Finder window */
+  border-radius: 12px;               /* macOS window corner radius */
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.12),
+              0 12px 30px rgba(0,0,0,.18),
+              0 34px 90px rgba(0,0,0,.30);
+  overflow: hidden;
+  z-index: 100;
+  color: #1d1d1f;
+  font-size: 13px;
+  will-change: transform, opacity;   /* smooth open/close zoom (animated in script.js) */
+  transition: box-shadow .22s ease;
+}
+.infowin[hidden] { display: none; }
+/* subtle lift while dragging (macOS) */
+.infowin.dragging {
+  box-shadow: 0 0 0 .5px rgba(0,0,0,.14),
+              0 18px 40px rgba(0,0,0,.24),
+              0 50px 120px rgba(0,0,0,.38);
+}
+/* continuous (squircle) corners where the browser supports it — progressive enhancement */
+@supports (corner-shape: squircle) {
+  .infowin       { corner-shape: squircle; }
+  .infowin__icon { corner-shape: squircle; }
+  .icon__thumb   { corner-shape: squircle; }
+  .dock__item img{ corner-shape: squircle; }
+}
+body.is-mobile .infowin { width: 340px; max-height: 90vh; }
+
+/* title bar */
+.infowin__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 13px;
+  background: #f0f0f2;               /* macOS toolbar grey, opaque */
+  border-bottom: .5px solid rgba(0,0,0,.12);
+  cursor: grab;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.infowin__bar:active { cursor: grabbing; }
+.tl {
+  position: relative;
+  width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto;
+  box-shadow: inset 0 0 0 .5px rgba(0,0,0,.16);
+}
+.tl--red    { background: #ff5f57; }
+.tl--yellow { background: #febc2e; }
+.tl--green  { background: #28c840; }
+.tl--red { cursor: pointer; }
+/* macOS traffic-light glyphs — centred in each circle, shown only when the lights are hovered */
+.tl::after {
+  content: "";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 9px/1 -apple-system, system-ui, sans-serif;
+  color: rgba(0,0,0,.55);
+  opacity: 0; transition: opacity .12s ease;
+}
+.infowin__lights:hover .tl--red::after    { content: "✕"; opacity: 1; }
+.infowin__lights:hover .tl--yellow::after { content: "–"; opacity: 1; font-size: 11px; line-height: 0; }
+.infowin__lights:hover .tl--green::after  { content: "+"; opacity: 1; font-size: 11px; }
+/* traffic lights stay top-left and always visible (standard macOS) */
+.infowin__lights {
+  display: flex; align-items: center; gap: 8px;
+}
+.infowin__title {
+  margin-left: 8px;
+  font-size: 13px; font-weight: 600; color: #45454a;
+  letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* body */
+.infowin__body {
+  padding: 16px 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  -webkit-overflow-scrolling: touch;
+}
+.infowin__head { display: flex; align-items: center; gap: 13px; }
+.infowin__icon { width: 54px; height: 54px; border-radius: 12px; object-fit: cover;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18), 0 0 0 .5px rgba(0,0,0,.06); flex: 0 0 auto; }
+.infowin__bigtitle { font-size: 16px; font-weight: 600; letter-spacing: -.014em; color: #1d1d1f; }
+.infowin__subtitle { font-size: 12.5px; color: #86868b; margin-top: 2px; }
+
+.infowin__desc {
+  background: #f5f5f7;
+  border: .5px solid rgba(0,0,0,.08);
+  border-radius: 10px;
+  padding: 13px 15px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #2a2a2c;
+}
+.infowin__desc em { font-style: italic; }
+
+.infowin__sec { font-size: 13px; }
+.infowin__sec > summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: #2e2e2e;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.infowin__sec > summary::-webkit-details-marker { display: none; }
+.infowin__sec > summary::before {
+  content: "";
+  width: 0; height: 0;
+  border-left: 5px solid #8a8a8a;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform .15s ease;
+}
+.infowin__sec[open] > summary::before { transform: rotate(90deg); }
+.infowin__type { padding: 7px 0 2px 16px; color: #3a3a3a; }
+.infowin__k { font-weight: 600; }
+
+.infowin__preview { padding: 8px 0 2px 16px; display: flex; flex-direction: column; gap: 14px; }
+/* clean framed cards — the light/dark rhythm comes from each clip's own background */
+.infowin__preview img,
+.infowin__preview video {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.12),
+              0 6px 18px rgba(0,0,0,.16),
+              0 1px 3px rgba(0,0,0,.10);
+}
+.infowin__preview video { background: #000; }   /* native aspect — never crop the clip */
+/* two clips share one row — each keeps its own native format (no forced crop/padding) */
+.infowin__preview .infowin__row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.infowin__preview .infowin__row img { width: 100%; height: auto; }
