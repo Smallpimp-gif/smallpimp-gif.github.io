@@ -395,3 +395,42 @@ iwBar.addEventListener('pointermove', (e) => {
 const endDrag = () => { drag = null; infowin.classList.remove('dragging'); };
 iwBar.addEventListener('pointerup', endDrag);
 iwBar.addEventListener('pointercancel', endDrag);
+
+/* ---------- boot screen ----------
+   Wait for the wallpaper, every desktop icon and the dock to finish loading,
+   updating the progress bar, then fade the overlay out — the desktop is revealed
+   fully painted with its icon animations already playing. */
+(function boot() {
+  const el = document.getElementById('boot');
+  if (!el) return;
+  const fill = document.getElementById('bootFill');
+  const media = [
+    document.querySelector('.wallpaper'),
+    ...document.querySelectorAll('#icons .icon img, #icons .icon video, .dock__item img'),
+  ].filter(Boolean);
+  const total = media.length || 1;
+  let done = 0, finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    if (fill) fill.style.width = '100%';
+    requestAnimationFrame(() => {
+      el.classList.add('done');
+      setTimeout(() => el.remove(), 650);
+    });
+  };
+  const bump = () => {
+    done++;
+    if (fill) fill.style.width = Math.min(100, Math.round((done / total) * 100)) + '%';
+    if (done >= total) finish();
+  };
+  media.forEach((m) => {
+    const isVid = m.tagName === 'VIDEO';
+    const ready = isVid ? m.readyState >= 2 : (m.complete && m.naturalWidth > 0);
+    if (ready) { bump(); return; }
+    if (isVid) m.preload = 'auto'; else m.loading = 'eager';
+    m.addEventListener(isVid ? 'loadeddata' : 'load', bump, { once: true });
+    m.addEventListener('error', bump, { once: true });
+  });
+  setTimeout(finish, 5000);   // safety net: never hold the desktop longer than 5s
+})();

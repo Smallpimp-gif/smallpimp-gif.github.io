@@ -19,9 +19,19 @@
   <link rel="icon" type="image/png" sizes="256x256" href="assets/favicon-cat.png">
   <link rel="apple-touch-icon" href="assets/favicon-cat.png">
   <link rel="preload" as="image" href="assets/bg.jpg">
-  <link rel="stylesheet" href="styles.css?v=122">
+  <link rel="stylesheet" href="styles.css?v=123">
+  <noscript><style>#boot{display:none!important}</style></noscript>
 </head>
 <body>
+  <!-- Boot screen: holds the desktop until wallpaper, icons and dock have loaded, then fades to reveal it ready -->
+  <div id="boot">
+    <div class="boot__inner">
+      <img class="boot__logo" src="assets/favicon-cat.png" alt="" draggable="false">
+      <div class="boot__name">SEMENOV</div>
+      <div class="boot__bar"><i id="bootFill"></i></div>
+    </div>
+  </div>
+
   <main class="viewport" id="viewport">
     <!-- Full-bleed wallpaper fills the whole screen; icons are anchored to it by JS -->
     <img class="wallpaper" src="assets/bg.jpg" alt="" aria-hidden="true" draggable="false">
@@ -69,7 +79,7 @@
     </p>
   </noscript>
 
-  <script src="windows-data.js?v=122"></script>
-  <script src="script.js?v=122"></script>
+  <script src="windows-data.js?v=123"></script>
+  <script src="script.js?v=123"></script>
 </body>
 </html>
